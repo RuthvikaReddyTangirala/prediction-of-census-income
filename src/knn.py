@@ -25,8 +25,40 @@ model.fit(X_train_Scaled, y_train)
 #Performing predictions on the test set
 predictions = model.predict(X_test_Scaled) 
 
-# Evaluate the model
-print("Accuracy:", accuracy_score(y_test, predictions))
-print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
+#Confusion Matrix
+Confusion_Matrix = confusion_matrix(y_test, predictions)
+plot_cm = ConfusionMatrixDisplay(confusion_matrix = Confusion_Matrix)
+plot_cm.plot()
+
+#Plotting ROC Curve
+probability_scores = model.predict_proba(X_test_Scaled)[:, 1]
+specificity, sensitivity, thresholds = roc_curve(y_test, probability_scores)
+auc_score = roc_auc_score(y_test, probability_scores)
+plt.figure()
+plt.plot(specificity, sensitivity, label='ROC curve (area = %0.2f)' % auc_score)
+# random predictions curve i.e., when probability is 0.5
+plt.plot([0, 1], [0, 1], '--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('1-Specificity')
+plt.ylabel('Sensitivity')
+plt.title('Receiver Operating Characteristic')
+plt.legend(loc="lower right")
+plt.show() 
+
+
+#Classification Report
 print("Classification Report:\n", classification_report(y_test, predictions))
 
+#Metrics
+results = {
+    'Model': ['Logistic Regression'],
+    'Accuracy': [accuracy_score(y_test, predictions)],
+    'Precision': [precision_score(y_test, predictions)],
+    'Recall': [recall_score(y_test, predictions)],
+    'F1 Score': [f1_score(y_test, predictions)],
+    'AUC': [auc_score]
+}
+
+results_df = pd.DataFrame(results)
+print(results_df)
