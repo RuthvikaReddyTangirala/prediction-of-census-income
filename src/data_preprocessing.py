@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 #reading the dataframe
 df = pd.read_csv("data\census_income.csv")
@@ -75,8 +76,7 @@ df_encoded = df_encoded.drop_duplicates(subset=df_encoded.columns.difference(['i
 #Assigning False to 0 and True to 1
 df_encoded = df_encoded.replace([False, True],[0,1])
 
-#import statsmodels
-from statsmodels.stats.outliers_influence import variance_inflation_factor
+
 X = df_encoded.drop(['income'], axis =1 )
 y = df_encoded['income']
 
@@ -127,4 +127,4 @@ print(vif_data[vif_data['VIF']>10])
 df_encoded.drop(['race_White','marital-status_Married-civ-spouse'], axis =1, inplace = True)
 print(df_encoded)
 
-df_encoded.to_csv('data\preprocesses_data.csv')
+df_encoded.to_csv('data\preprocessed_data.csv', index = False)
