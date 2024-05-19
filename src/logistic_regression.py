@@ -30,17 +30,19 @@ X_train_smote, y_train_smote = smote.fit_resample(X_train_scaled, y_train)
 # Reduced logistic regression hyperparameter grid
 param_grid = {
     'C': [0.1, 1, 10],
+    'penalty': ['l1', 'l2'],
     'solver': ['liblinear', 'saga'],
-    'class_weight': ['balanced'],
-    'max_iter': [2000]
+    'max_iter': [x for x in range(100,1200,100)]
 }
 
 # Performing grid search CV with all the available processors
-grid_search = GridSearchCV(LogisticRegression(random_state=42), param_grid, cv=5, scoring='f1', verbose=1, n_jobs=-1)
+grid_search = GridSearchCV(LogisticRegression(random_state=42), param_grid, cv=5, scoring='f1', verbose=10, n_jobs=8)
 grid_search.fit(X_train_smote, y_train_smote)
 
 # Getting the best possible model
 best_model = grid_search.best_estimator_
+print("Best Estimators:")
+print(best_model)
 
 # Predicting probabilities to plot ROC Curve
 y_scores = best_model.predict_proba(X_test_scaled)[:, 1]
@@ -95,4 +97,4 @@ results = {
 
 results_df = pd.DataFrame(results)
 print(results_df)
-results_df.to_csv("data/lr.csv", index=False)
+results_df.to_csv("data/logistic_regression.csv", index=False)
