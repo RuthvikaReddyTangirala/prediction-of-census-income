@@ -22,19 +22,22 @@ X_test_Scaled = scaler.transform(X_test)
 # Adjusting hyperparameter grid to include class_weight
 param_grid = {
     'n_estimators': [100, 200, 300],
-    'max_depth': [10, 20, None],
+    'criterion': ['gini','entropy','log_loss'],
+    # 'max_depth': [10, 20, None],
     'min_samples_split': [2, 5, 10],
     'min_samples_leaf': [1, 2, 4],
-    'max_features': ['auto', 'sqrt'],
+    'max_features': [None, 'sqrt', 'log2'],
     'class_weight': [{0: 1, 1: 2}, {0: 1, 1: 3}, 'balanced']  # Adjusting class weight
 }
 
 # Grid search CV focusing on F1 score
-grid_search = GridSearchCV(estimator=RandomForestClassifier(random_state=0), param_grid=param_grid, cv=3, n_jobs=-1, verbose=2, scoring='f1')
+grid_search = GridSearchCV(estimator=RandomForestClassifier(random_state=0), param_grid=param_grid, cv=5, n_jobs=-1, verbose=10, scoring='f1')
 grid_search.fit(X_train_Scaled, y_train)
 
 # Getting the best possible model
 best_model = grid_search.best_estimator_
+print("Best Estimators:")
+print(best_model)
 
 # Performing predictions with the optimized model
 predictions = best_model.predict(X_test_Scaled)
@@ -65,7 +68,7 @@ print('Classification Report: \n', classification_report(y_test, predictions))
 
 # Metrics
 results = {
-    'Model': ['Optimized Random Forest Classifier for F1'],
+    'Model': ['Random Forest Classifier'],
     'Accuracy': [accuracy_score(y_test, predictions)],
     'Precision': [precision_score(y_test, predictions)],
     'Recall': [recall_score(y_test, predictions)],
@@ -75,4 +78,4 @@ results = {
 
 results_df = pd.DataFrame(results)
 print(results_df)
-results_df.to_csv("data/RFC_optimized_f1.csv", index=False)
+results_df.to_csv("data/RFC.csv", index=False)
