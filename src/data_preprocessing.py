@@ -17,7 +17,7 @@ df = df.replace('?', np.nan)
 #Discrepancies present in the income value
 df['income'] = df['income'].replace({'<=50K.': '<=50K', '>50K.': '>50K'}) 
 
-#encoding <=50k as 1 and >50k as 0
+#encoding <=50k as 0 and >50k as 1
 df['income'] = df['income'].map({'<=50K': 0, '>50K': 1})
 
 #encoding male as 1 and female as 0
@@ -127,4 +127,5 @@ print(vif_data[vif_data['VIF']>10])
 df_encoded.drop(['race_White','marital-status_Married-civ-spouse'], axis =1, inplace = True)
 print(df_encoded)
 
+print(df["income"].value_counts())
 df_encoded.to_csv('data\preprocessed_data.csv', index = False)

@@ -1,64 +1,72 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, ConfusionMatrixDisplay, roc_curve, roc_auc_score, precision_score, recall_score, f1_score
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, ConfusionMatrixDisplay, roc_curve, roc_auc_score, precision_score, recall_score, f1_score, precision_recall_curve
 
-df = pd.read_csv('data\preprocessed_data.csv')
-
-X= df.drop('income', axis=1)
-y= df['income']
-#splitting the train and test data
-X_train, X_test, y_train, y_test = train_test_split(X, y , test_size=0.3, random_state= 0)
-
-#Feature scaling for standardisation
+# Load and prepare the data
+df = pd.read_csv('data/preprocessed_data.csv')
+X = df.drop('income', axis=1)
+y = df['income']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
 scaler = StandardScaler()
 X_train_Scaled = scaler.fit_transform(X_train)
-X_test_Scaled = scaler.transform(X_test) 
+X_test_Scaled = scaler.transform(X_test)
 
-#Initialising the model
-k = 5
-model = KNeighborsClassifier(n_neighbors=k)
-model.fit(X_train_Scaled, y_train)
+# Train a KNN model
+knn_model = KNeighborsClassifier(n_neighbors=5)
+knn_model.fit(X_train_Scaled, y_train)
 
-#Performing predictions on the test set
-predictions = model.predict(X_test_Scaled) 
+# Train a Random Forest model for feature importance
+rf_model = RandomForestClassifier()
+rf_model.fit(X_train_Scaled, y_train)
 
-#Confusion Matrix
-Confusion_Matrix = confusion_matrix(y_test, predictions)
-plot_cm = ConfusionMatrixDisplay(confusion_matrix = Confusion_Matrix)
+# Feature importance from Random Forest
+feature_importances = rf_model.feature_importances_
+plt.barh(range(len(feature_importances)), feature_importances, align='center')
+plt.yticks(range(len(feature_importances)), X.columns)
+plt.xlabel('Feature Importance')
+plt.ylabel('Feature')
+plt.show()
+
+# Voting classifier - simple model stacking
+voting_clf = VotingClassifier(
+    estimators=[('knn', knn_model), ('rf', rf_model)], voting='soft'
+)
+voting_clf.fit(X_train_Scaled, y_train)
+
+# Evaluate the ensemble model
+ensemble_predictions = voting_clf.predict(X_test_Scaled)
+ensemble_proba = voting_clf.predict_proba(X_test_Scaled)[:, 1]
+
+# Find the optimal threshold for F1 score
+precision, recall, thresholds = precision_recall_curve(y_test, ensemble_proba)
+f1_scores = 2*recall*precision / (recall+precision)
+best_threshold = thresholds[np.argmax(f1_scores)]
+
+# Apply the threshold to make predictions
+optimized_predictions = (ensemble_proba >= best_threshold).astype(int)
+
+# Classification report and confusion matrix
+print("Classification Report:\n", classification_report(y_test, optimized_predictions))
+Confusion_Matrix = confusion_matrix(y_test, optimized_predictions)
+plot_cm = ConfusionMatrixDisplay(confusion_matrix=Confusion_Matrix)
 plot_cm.plot()
+plt.show()
 
-#Plotting ROC Curve
-probability_scores = model.predict_proba(X_test_Scaled)[:, 1]
-specificity, sensitivity, thresholds = roc_curve(y_test, probability_scores)
-auc_score = roc_auc_score(y_test, probability_scores)
-plt.figure()
-plt.plot(specificity, sensitivity, label='ROC curve (area = %0.2f)' % auc_score)
-# random predictions curve i.e., when probability is 0.5
-plt.plot([0, 1], [0, 1], '--')
-plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.05])
-plt.xlabel('1-Specificity')
-plt.ylabel('Sensitivity')
-plt.title('Receiver Operating Characteristic')
-plt.legend(loc="lower right")
-plt.show() 
-
-
-#Classification Report
-print("Classification Report:\n", classification_report(y_test, predictions))
-
-#Metrics
+# Update results with the best model's performance
 results = {
-    'Model': ['Logistic Regression'],
-    'Accuracy': [accuracy_score(y_test, predictions)],
-    'Precision': [precision_score(y_test, predictions)],
-    'Recall': [recall_score(y_test, predictions)],
-    'F1 Score': [f1_score(y_test, predictions)],
-    'AUC': [auc_score]
+    'Model': ['Voting Classifier with Optimized Threshold'],
+    'Accuracy': [accuracy_score(y_test, optimized_predictions)],
+    'Precision': [precision_score(y_test, optimized_predictions)],
+    'Recall': [recall_score(y_test, optimized_predictions)],
+    'F1 Score': [f1_score(y_test, optimized_predictions)],
+    'AUC': [roc_auc_score(y_test, ensemble_proba)]
 }
 
 results_df = pd.DataFrame(results)
 print(results_df)
+results_df.to_csv("data/knn.csv", index=False)

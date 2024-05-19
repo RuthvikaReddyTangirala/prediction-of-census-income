@@ -1,0 +1,2 @@
+Model,Accuracy,Precision,Recall,F1 score,AUC
+SVM with RandomizedSearchCV (Reduced Data),0.826378896882494,0.5482233502538071,0.54,0.5440806045340051,0.8360608308605342
